@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vocabulary Hero</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Balsamiq+Sans&family=Yusei+Magic&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome / Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Firebase Imports -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        window.firebaseModules = { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore, doc, setDoc, getDoc, collection };
+    </script>
+
+    <style>
+        :root {
+            --primary-font: 'Yusei Magic', sans-serif;
+            --vocab-font: 'Balsamiq Sans', cursive;
+            --ds-bg: #1a1a1a;
+            --ds-red: #a82626;
+            --ds-text: #f0f0f0;
+            --ds-gold: #d4af37;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: var(--primary-font);
+            text-transform: capitalize;
+            background-color: var(--ds-bg);
+            color: var(--ds-text);
+            overflow: hidden;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .font-vocab { font-family: var(--vocab-font); }
+        .font-heading { font-family: var(--primary-font); }
+
+            --heading-font: 'Yusei Magic';
+            --ds-bg: #1a1a1a;
+            --ds-red: #a82626;
+            --ds-text: #f0f0f0;
+            --ds-gold: #d4af37;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: var(--primary-font);
+            background-color: var(--ds-bg);
+            color: var(--ds-text);
+            overflow: hidden;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .font-heading {
+            font-family: var(--heading-font);
+        }
+
+        /* Backgrounds */
+        .bg-welcome {
+            background-image: linear-gradient(rgba(26, 26, 26, 0.7), rgba(26, 26, 26, 0.9)), url('https://static0.srcdn.com/wordpress/wp-content/uploads/2024/10/demon-slayer-roar-of-victory-poster.jpg?w=1200&h=900&fit=crop');
+            background-size: cover;
+            background-position: center;
+        }
+
+        .bg-app {
+            background-image: linear-gradient(rgba(26, 26, 26, 0.85), rgba(26, 26, 26, 0.95)), url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTtKiiYgjF_EK3DURfAn-eX4Aw59NN4pzKEWfm6m0LsMzvc5Yvc-I0OGYh5&s=10');
+            background-size: cover;
+            background-position: center;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Animations */
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 10px rgba(168, 38, 38, 0.5); }
+            50% { transform: scale(1.03); box-shadow: 0 0 20px rgba(168, 38, 38, 0.9); }
+        }
+        .animate-breathe { animation: breathe 3s infinite ease-in-out; }
+
+        @keyframes slash {
+            0% { clip-path: polygon(0 0, 0 0, 0 100%, 0% 100%); opacity: 0; }
+            50% { opacity: 1; }
+            100% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+        }
+        .slash-transition {
+            animation: slash 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+
+        /* UI Elements */
+        .ds-button {
+            background: linear-gradient(135deg, #2a2a2a, var(--ds-red));
+            border: 2px solid var(--ds-gold);
+            color: var(--ds-text);
+            border-radius: 8px;
+            padding: 12px 24px;
+            text-shadow: 1px 1px 2px black;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+            font-family: var(--primary-font);
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .ds-button:active {
+            transform: scale(0.95);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+        .ds-button::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
+            transform: skewX(-20deg);
+            transition: left 0.5s ease;
+        }
+        .ds-button:hover::after {
+            left: 150%;
+        }
+
+        .ds-card {
+            background: rgba(40, 40, 40, 0.7);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+        }
+
+        .ds-input {
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid var(--ds-gold);
+            color: var(--ds-text);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 1.2rem;
+            text-align: center;
+            width: 100%;
+            transition: border-color 0.3s;
+            text-transform: lowercase;
+        }
+        .ds-input:focus {
+            outline: none;
+            border-color: var(--ds-red);
+            box-shadow: 0 0 10px rgba(168, 38, 38, 0.5);
+        }
+
+        /* Keyboard styles */
+        .key-btn {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: var(--ds-text);
+            font-size: 1.5rem;
+            padding: 10px;
+            text-transform: lowercase;
+            font-weight: 600;
+            font-family: var(--vocab-font);
+        }
+        .key-btn:active { background: #555; }
+        .key-disabled {
+            opacity: 0.3;
+            pointer-events: none;
+            background: #111;
+            border-color: #f00;
+        }
+
+        .title-shadow {
+            text-shadow: 0 0 10px black, 0 0 20px black, 0 0 30px var(--ds-gold);
+        }
+
+        .hidden { display: none !important; }
+
+        /* Wisteria Particles */
+        .particle {
+            position: absolute;
+            background: #896ab8;
+            border-radius: 50%;
+            opacity: 0.6;
+            pointer-events: none;
+            animation: fall linear forwards;
+        }
+        @keyframes fall {
+            to { transform: translateY(100vh) rotate(360deg); }
+        }
+
+        /* Nav Tab */
+        .nav-tab {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            color: #888;
+            transition: all 0.3s;
+            border-bottom: 2px solid transparent;
+            font-family: var(--primary-font);
+            font-weight: bold;
+            text-transform: capitalize;
+        }
+        .nav-tab:hover {
+            color: var(--ds-text);
+        }
+        .nav-tab.active {
+            color: var(--ds-gold);
+            border-bottom: 2px solid var(--ds-gold);
+            background: linear-gradient(to top, rgba(212, 175, 55, 0.1), transparent);
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col">
+
+    <!-- Audio Context & Synthesis Setup -->
+    <div id="audio-container" class="hidden"></div>
+
+    <!-- Modals Overlay -->
+    <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center hidden">
+        <div id="modal-content" class="ds-card p-8 max-w-md w-full mx-4 text-center">
+            <!-- Modal content injected dynamically -->
+        </div>
+    </div>
+
+    <!-- MAIN SPA WRAPPER -->
+    <div id="app" class="w-full h-full flex flex-col relative bg-app">
+        
+        <!-- Header -->
+        <header id="main-header" class="hidden flex-none p-4 flex justify-between items-center bg-black bg-opacity-80 border-b border-[#a82626] z-40">
+            <div class="flex items-center gap-4">
+                <div class="font-heading text-xl md:text-2xl text-[#d4af37] font-bold tracking-wider hidden sm:block">
+                    vocab hero
+                </div>
+                <nav class="flex gap-2">
+                    <button class="nav-tab active text-sm md:text-base" data-tab="practice">Practice</button>
+                    <button class="nav-tab text-sm md:text-base" data-tab="activity">Activity</button>
+                    <button class="nav-tab text-sm md:text-base" data-tab="results">Results</button>
+                </nav>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden md:block">
+                    <div id="display-en-name" class="font-bold text-sm leading-tight text-[#d4af37]">Name</div>
+                    <div id="display-zh-name" class="text-xs text-gray-400">名字</div>
+                </div>
+                <div class="font-heading text-[#d4af37] font-bold text-lg border border-[#d4af37] px-3 py-1 rounded bg-[#1a1a1a]">
+                    <i class="fa-solid fa-star text-sm"></i> <span id="display-total-score">0</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dynamic Container -->
+        <main id="app-root" class="flex-1 relative overflow-hidden">
+            
+            <!-- View: Welcome (Overlay over main content before init) -->
+            <div id="view-welcome" class="absolute inset-0 bg-welcome flex flex-col items-center justify-center p-6 z-50">
+                <h1 class="text-5xl md:text-7xl font-bold font-heading text-center mb-8 title-shadow tracking-wider text-[#d4af37]">
+                    vocab hero<br>
+                    <span class="text-3xl text-white block mt-4 font-primary" style="text-shadow: 0 0 10px black;">歡迎，超級英雄！</span>
+                </h1>
+                
+                <div class="ds-card p-6 w-full max-w-sm flex flex-col gap-4 bg-opacity-90">
+                    <div>
+                        <label class="block text-sm mb-1 text-gray-300">chinese name (繁體中文)</label>
+                        <input type="text" id="input-zh-name" class="ds-input" placeholder="例如：賈桂琳" autocomplete="off">
+                        <p id="err-zh-name" class="text-[#a82626] text-xs mt-1 hidden font-bold">Please use Chinese characters only.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm mb-1 text-gray-300">english name (英文名字)</label>
+                        <input type="text" id="input-en-name" class="ds-input" placeholder="e.g. jhackie" autocomplete="off">
+                        <p id="err-en-name" class="text-[#a82626] text-xs mt-1 hidden font-bold">please use english letters only.</p>
+                    </div>
+                    <button id="btn-start" class="ds-button animate-breathe mt-4 text-xl py-3 font-heading tracking-widest">
+                        begin journey
+                    </button>
+                </div>
+            </div>
+
+            <!-- View: Main Hub -->
+            <div id="view-hub" class="absolute inset-0 flex flex-col hidden z-10 slash-transition overflow-y-auto p-4 md:p-8">
+                <!-- Content injected via JS based on Tabs -->
+            </div>
+
+            <!-- View: Active Game / Practice overlay -->
+            <div id="view-game" class="absolute inset-0 bg-[#1a1a1a] flex flex-col hidden z-30 slash-transition">
+                <div class="p-4 flex justify-between items-center border-b border-gray-700 bg-black bg-opacity-50">
+                    <button id="btn-exit-game" class="text-gray-400 hover:text-white text-xl p-2 transition"><i class="fa-solid fa-arrow-left"></i> Exit</button>
+                    <h2 id="game-title" class="text-2xl font-bold font-heading tracking-widest text-[#d4af37]">Title</h2>
+                    <div id="game-timer" class="font-heading text-2xl font-bold w-20 text-right">--:--</div>
+                </div>
+                <div id="game-content" class="flex-1 flex flex-col items-center p-4 overflow-y-auto justify-center bg-app">
+                    <!-- Injected via JS -->
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Footer -->
+        <footer id="main-footer" class="hidden flex-none p-3 bg-black bg-opacity-90 border-t border-gray-800 flex justify-between items-center text-sm z-40">
+            <div class="flex items-center gap-3">
+                <button id="btn-footer-mic" class="flex items-center gap-2 px-3 py-1 rounded bg-gray-800 hover:bg-gray-700 transition border border-gray-600">
+                    <i id="footer-mic-icon" class="fa-solid fa-microphone-slash text-[#a82626]"></i>
+                    <span id="footer-mic-text" class="text-gray-300 font-semibold">Mic Setup</span>
+                </button>
+            </div>
+            <div class="flex gap-4 items-center">
+                <button class="text-gray-400 hover:text-white transition" onclick="UI.showSettingsModal()">
+                    <i class="fa-solid fa-gear text-lg"></i>
+                </button>
+                <button id="btn-toggle-vol" class="text-[#d4af37] hover:text-white transition w-8 text-center text-lg">
+                    <i class="fa-solid fa-volume-high"></i>
+                </button>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Application Script -->
+    <script type="module">
+        // --- DATA ---
+        const MASTER_VOCAB = [
+            { en: 'superhero', zh: '超級英雄' },
+            { en: 'hero', zh: '英雄' },
+            { en: 'villain', zh: '反派' },
+            { en: 'citizen', zh: '市民' },
+            { en: 'powers', zh: '超能力' },
+            { en: 'weakness', zh: '弱點' },
+            { en: 'enemy', zh: '敵人' },
+            { en: 'mask', zh: '面具' },
+            { en: 'symbol', zh: '象徵' },
+            { en: 'normal life', zh: '正常生活' },
+            { en: 'story', zh: '故事' }
+        ];
+
+        // --- STATE MANAGEMENT ---
+        const AppState = {
+            user: { enName: '', zhName: '', uid: null },
+            micAllowed: false,
+            settings: { volume: 1, sfx: true, animations: true },
+            progress: {
+                act1: null, // max 100
+                act2: null,
+                act3: null,
+                act4: null,
+                recordings: []
+            },
+            currentTab: 'practice'
+        };
+
+        let firebaseDb = null;
+        let firebaseAuth = null;
+        let appId = 'vocab-hero-tw';
+
+        // --- UTILS ---
+        const utils = {
+            shuffle: (array) => {
+                let currentIndex = array.length, randomIndex;
+                while (currentIndex !== 0) {
+                    randomIndex = Math.floor(Math.random() * currentIndex);
+                    currentIndex--;
+                    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+                }
+                return array;
+            },
+            getFiveWords: () => utils.shuffle([...MASTER_VOCAB]).slice(0, 5),
+            formatTime: (sec) => {
+                const m = Math.floor(sec / 60);
+                const s = sec % 60;
+                return `${m}:${s < 10 ? '0' : ''}${s}`;
+            },
+            saveState: () => {
+                localStorage.setItem('VocabHeroState', JSON.stringify(AppState));
+                syncToFirebase();
+            },
+            loadState: () => {
+                const saved = localStorage.getItem('VocabHeroState');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    Object.assign(AppState, parsed);
+                    return true;
+                }
+                return false;
+            },
+            clearState: () => {
+                localStorage.removeItem('VocabHeroState');
+                AppState.user = { enName: '', zhName: '', uid: AppState.user.uid };
+                AppState.progress = { act1: null, act2: null, act3: null, act4: null, recordings: [] };
+            },
+            speak: (text, lang = 'en-US') => {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = lang;
+                    utterance.volume = AppState.settings.volume;
+                    utterance.rate = 1.0; 
+                    window.speechSynthesis.speak(utterance);
+                }
+            },
+            playSfx: (type) => {
+                if (!AppState.settings.sfx || AppState.settings.volume === 0) return;
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                if (type === 'slash') { 
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(800, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.5, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+                    osc.start(); osc.stop(ctx.currentTime + 0.2);
+                } else if (type === 'error') { 
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(200, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.5, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                    osc.start(); osc.stop(ctx.currentTime + 0.3);
+                } else if (type === 'fanfare') { 
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(400, ctx.currentTime);
+                    osc.frequency.setValueAtTime(600, ctx.currentTime + 0.1);
+                    osc.frequency.setValueAtTime(800, ctx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.5);
+                    osc.start(); osc.stop(ctx.currentTime + 0.5);
+                } else { 
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+                    osc.start(); osc.stop(ctx.currentTime + 0.05);
+                }
+            },
+            capitalize: (s) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(),
+            spawnParticles: () => {
+                if(!AppState.settings.animations) return;
+                const root = document.getElementById('app-root');
+                for(let i=0; i<15; i++) {
+                    const p = document.createElement('div');
+                    p.className = 'particle z-50';
+                    p.style.left = Math.random() * 100 + 'vw';
+                    p.style.top = '-20px';
+                    p.style.width = p.style.height = (Math.random() * 10 + 5) + 'px';
+                    p.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                    root.appendChild(p);
+                    setTimeout(() => p.remove(), 4000);
+                }
+            }
+        };
+
+        // --- FIREBASE INIT ---
+        const initFirebase = async () => {
+            try {
+                if (typeof __firebase_config !== 'undefined') {
+                    const config = JSON.parse(__firebase_config);
+                    const app = window.firebaseModules.initializeApp(config);
+                    firebaseAuth = window.firebaseModules.getAuth(app);
+                    firebaseDb = window.firebaseModules.getFirestore(app);
+                    
+                    if (typeof __app_id !== 'undefined') appId = __app_id;
+
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await window.firebaseModules.signInWithCustomToken(firebaseAuth, __initial_auth_token);
+                    } else {
+                        await window.firebaseModules.signInAnonymously(firebaseAuth);
+                    }
+
+                    window.firebaseModules.onAuthStateChanged(firebaseAuth, (user) => {
+                        if (user) {
+                            AppState.user.uid = user.uid;
+                        }
+                    });
+                }
+            } catch (e) {
+                console.log("Firebase not configured or failed, running locally.");
+            }
+        };
+
+        const syncToFirebase = async () => {
+            if (!firebaseDb || !AppState.user.uid) return;
+            try {
+                const { doc, setDoc } = window.firebaseModules;
+                const docRef = doc(firebaseDb, 'artifacts', appId, 'users', AppState.user.uid, 'sessions', 'latest');
+                await setDoc(docRef, AppState);
+            } catch (e) {
+                console.error("Firebase sync failed", e);
+            }
+        };
+
+        const syncToGoogleDocs = () => {
+            console.log("Uploading to Google Sheets (Mocking API Call)...");
+        };
+
+        // --- UI CONTROLLERS ---
+        const UI = {
+            showModal: (html, isCancellable = false) => {
+                const ov = document.getElementById('modal-overlay');
+                const content = document.getElementById('modal-content');
+                content.innerHTML = html;
+                if(isCancellable) {
+                    content.innerHTML += `<button onclick="document.getElementById('modal-overlay').classList.add('hidden')" class="mt-4 text-gray-400 text-sm underline">Cancel</button>`;
+                }
+                ov.classList.remove('hidden');
+            },
+            hideModal: () => document.getElementById('modal-overlay').classList.add('hidden'),
+            switchView: (viewId) => {
+                ['view-welcome', 'view-hub', 'view-game'].forEach(id => {
+                    document.getElementById(id).classList.add('hidden');
+                    document.getElementById(id).classList.remove('slash-transition');
+                });
+                const view = document.getElementById(viewId);
+                view.classList.remove('hidden');
+                if(AppState.settings.animations && viewId !== 'view-welcome') {
+                    view.classList.add('slash-transition');
+                }
+            },
+            updateLayout: () => {
+                if (AppState.user.enName && AppState.user.zhName) {
+                    document.getElementById('main-header').classList.remove('hidden');
+                    document.getElementById('main-footer').classList.remove('hidden');
+                    document.getElementById('display-en-name').innerText = AppState.user.enName;
+                    document.getElementById('display-zh-name').innerText = AppState.user.zhName;
+                    const total = (AppState.progress.act1||0) + (AppState.progress.act2||0) + (AppState.progress.act3||0) + (AppState.progress.act4||0);
+                    document.getElementById('display-total-score').innerText = total;
+                    UI.updateFooter();
+                } else {
+                    document.getElementById('main-header').classList.add('hidden');
+                    document.getElementById('main-footer').classList.add('hidden');
+                }
+            },
+            updateFooter: () => {
+                const icon = document.getElementById('footer-mic-icon');
+                const text = document.getElementById('footer-mic-text');
+                if(AppState.micAllowed) {
+                    icon.className = "fa-solid fa-microphone text-green-500";
+                    text.innerText = "Mic Ready";
+                } else {
+                    icon.className = "fa-solid fa-microphone-slash text-[#a82626]";
+                    text.innerText = "Mic Off";
+                }
+                
+                const volBtn = document.getElementById('btn-toggle-vol');
+                if(AppState.settings.volume === 0) {
+                    volBtn.innerHTML = '<i class="fa-solid fa-volume-xmark text-gray-500"></i>';
+                } else {
+                    volBtn.innerHTML = '<i class="fa-solid fa-volume-high text-[#d4af37]"></i>';
+                }
+            },
+            showSettingsModal: () => {
+                UI.showModal(`
+                    <h2 class="text-2xl font-bold mb-4 font-heading text-[#d4af37]">Settings 設定</h2>
+                    <div class="flex flex-col gap-4 text-left">
+                        <div class="flex justify-between items-center border-b border-gray-700 pb-2">
+                            <span>Sound Effects 音效</span>
+                            <input type="checkbox" id="toggle-sfx-modal" class="w-5 h-5 accent-[#a82626]" ${AppState.settings.sfx?'checked':''}>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-gray-700 pb-2">
+                            <span>Animations 動畫</span>
+                            <input type="checkbox" id="toggle-anim-modal" class="w-5 h-5 accent-[#a82626]" ${AppState.settings.animations?'checked':''}>
+                        </div>
+                        <button id="btn-reset-modal" class="mt-6 border border-red-500 text-red-500 p-3 rounded font-bold hover:bg-red-900 hover:text-white transition">
+                            Reset Session 重新開始
+                        </button>
+                    </div>
+                `, true);
+
+                document.getElementById('toggle-sfx-modal').onchange = (e) => { AppState.settings.sfx = e.target.checked; utils.playSfx('click'); utils.saveState(); };
+                document.getElementById('toggle-anim-modal').onchange = (e) => { AppState.settings.animations = e.target.checked; utils.playSfx('click'); utils.saveState(); };
+                document.getElementById('btn-reset-modal').onclick = () => {
+                    utils.playSfx('click');
+                    UI.showModal(`
+                        <h3 class="text-xl font-bold mb-4 text-red-500 font-heading">Delete Session?</h3>
+                        <p class="text-sm mb-6">Are you sure you want to start a new session? All progress will be lost.</p>
+                        <div class="flex gap-4">
+                            <button id="confirm-reset" class="ds-button bg-red-800 flex-1">Confirm</button>
+                            <button onclick="UI.hideModal()" class="ds-button bg-gray-600 flex-1">Cancel</button>
+                        </div>
+                    `);
+                    document.getElementById('confirm-reset').onclick = () => {
+                        utils.clearState();
+                        window.location.reload();
+                    };
+                };
+            },
+            renderHubContent: () => {
+                const main = document.getElementById('view-hub');
+                main.innerHTML = '';
+                
+                // Update Nav Tabs Active State
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                const activeTabEl = document.querySelector(`.nav-tab[data-tab="${AppState.currentTab}"]`);
+                if(activeTabEl) activeTabEl.classList.add('active');
+
+                if(AppState.currentTab === 'practice') {
+                    main.innerHTML = `
+                        <div class="max-w-4xl mx-auto w-full">
+                            <h2 class="text-3xl font-bold mb-6 border-b border-gray-600 pb-2 text-[#896ab8] font-heading">Practice 練習</h2>
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div class="ds-card p-8 flex flex-col items-center justify-center cursor-pointer hover:border-[#d4af37] transition text-center group" onclick="Game.startPractice('listen')">
+                                    <i class="fa-solid fa-ear-listen text-6xl text-[#d4af37] mb-4 group-hover:scale-110 transition"></i>
+                                    <h3 class="text-2xl font-bold font-heading">Read and Listen</h3>
+                                    <p class="text-gray-400 mt-2">閱讀與聆聽</p>
+                                </div>
+                                <div class="ds-card p-8 flex flex-col items-center justify-center cursor-pointer hover:border-[#d4af37] transition text-center group" onclick="Game.startPractice('say')">
+                                    <i class="fa-solid fa-microphone text-6xl ${AppState.micAllowed ? 'text-[#d4af37]' : 'text-gray-600'} mb-4 group-hover:scale-110 transition"></i>
+                                    <h3 class="text-2xl font-bold font-heading">Read and Say</h3>
+                                    <p class="text-gray-400 mt-2">閱讀與朗讀</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else if(AppState.currentTab === 'activity') {
+                    main.innerHTML = `
+                        <div class="max-w-4xl mx-auto w-full">
+                            <h2 class="text-3xl font-bold mb-6 border-b border-gray-600 pb-2 text-[#a82626] font-heading">Activities 活動</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                ${[1,2,3,4].map(num => `
+                                    <div class="ds-card p-6 relative flex flex-col">
+                                        ${AppState.progress[`act${num}`] !== null ? `<div class="absolute top-0 right-0 bg-[#2d5a27] text-white text-sm px-3 py-1 rounded-bl-xl font-bold font-heading">Score: ${AppState.progress[`act${num}`]}</div>` : ''}
+                                        <h3 class="text-2xl font-bold font-heading text-[#d4af37]">Stage ${num}</h3>
+                                        <p class="text-gray-300 mb-6 mt-2 flex-1">${num===1?'Read English, Match Chinese':num===2?'Read Chinese, Match English':num===3?'Listen and Choose':'Listen and Spell'}</p>
+                                        <button class="ds-button w-full text-lg py-3" onclick="Game.startActivity(${num})">Start Challenge</button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                } else if(AppState.currentTab === 'results') {
+                    const acts = [AppState.progress.act1, AppState.progress.act2, AppState.progress.act3, AppState.progress.act4];
+                    const completed = acts.filter(a => a !== null).length;
+                    const ave = completed > 0 ? (acts.reduce((a,b)=>(a||0)+(b||0),0)/completed).toFixed(1) : 0;
+                    
+                    let grade = 'S';
+                    if(ave < 60) grade = 'C';
+                    else if(ave < 80) grade = 'B';
+                    else if(ave < 95) grade = 'A';
+
+                    main.innerHTML = `
+                        <div class="max-w-2xl mx-auto w-full">
+                            <h2 class="text-3xl font-bold mb-6 border-b border-gray-600 pb-2 text-[#d4af37] font-heading">Results 成績</h2>
+                            <div class="ds-card p-8 text-center bg-black bg-opacity-60 border-2 border-[#d4af37]">
+                                <div class="text-8xl font-bold text-[#d4af37] mb-2 title-shadow font-heading">${grade}</div>
+                                <p class="text-gray-300 mb-8 text-lg uppercase tracking-widest font-heading">Overall Grade 總評</p>
+                                
+                                <div class="grid grid-cols-2 gap-4 text-left">
+                                    <div class="bg-gray-900 border border-gray-700 p-4 rounded text-center">
+                                        <div class="text-sm text-gray-400 font-heading">Stage 1</div>
+                                        <div class="font-bold text-2xl text-[#f0f0f0]">${AppState.progress.act1 ?? '-'}</div>
+                                    </div>
+                                    <div class="bg-gray-900 border border-gray-700 p-4 rounded text-center">
+                                        <div class="text-sm text-gray-400 font-heading">Stage 2</div>
+                                        <div class="font-bold text-2xl text-[#f0f0f0]">${AppState.progress.act2 ?? '-'}</div>
+                                    </div>
+                                    <div class="bg-gray-900 border border-gray-700 p-4 rounded text-center">
+                                        <div class="text-sm text-gray-400 font-heading">Stage 3</div>
+                                        <div class="font-bold text-2xl text-[#f0f0f0]">${AppState.progress.act3 ?? '-'}</div>
+                                    </div>
+                                    <div class="bg-gray-900 border border-gray-700 p-4 rounded text-center">
+                                        <div class="text-sm text-gray-400 font-heading">Stage 4</div>
+                                        <div class="font-bold text-2xl text-[#f0f0f0]">${AppState.progress.act4 ?? '-'}</div>
+                                    </div>
+                                </div>
+                                <div class="mt-8 font-bold text-3xl text-[#d4af37] font-heading">Average: ${ave}</div>
+                                ${completed === 4 ? `<div class="mt-4 text-sm text-[#2d5a27]"><i class="fa-solid fa-check"></i> Data Synced to Server</div>` : `<div class="mt-4 text-sm text-gray-400">Complete all stages to sync.</div>`}
+                            </div>
+                        </div>
+                    `;
+                    if(completed === 4) syncToGoogleDocs();
+                }
+            }
+        };
+
+        // --- GAME / ACTIVITY ENGINE ---
+        const Game = {
+            timerId: null,
+            timeRemaining: 0,
+            words: [],
+            currentIndex: 0,
+            score: 0,
+            stage: null, 
+            spellState: null,
+            
+            initOverlay: (title) => {
+                clearInterval(Game.timerId);
+                UI.switchView('view-game');
+                document.getElementById('game-title').innerText = title;
+                document.getElementById('game-timer').innerText = '';
+                document.getElementById('game-timer').classList.remove('text-red-500', 'animate-pulse');
+                Game.words = utils.getFiveWords();
+                Game.currentIndex = 0;
+                Game.score = 0;
+                Game.spellState = null;
+            },
+            
+            startTimer: (seconds, onTick, onComplete) => {
+                Game.timeRemaining = seconds;
+                const display = document.getElementById('game-timer');
+                display.innerText = utils.formatTime(Game.timeRemaining);
+                
+                Game.timerId = setInterval(() => {
+                    Game.timeRemaining--;
+                    display.innerText = utils.formatTime(Game.timeRemaining);
+                    
+                    if(Game.timeRemaining <= 15 && Game.stage !== 4) {
+                        display.classList.add('text-red-500', 'animate-pulse');
+                    }
+                    
+                    if(onTick) onTick(Game.timeRemaining);
+                    
+                    if(Game.timeRemaining <= 0) {
+                        clearInterval(Game.timerId);
+                        onComplete();
+                    }
+                }, 1000);
+            },
+
+            endGame: (failed = false) => {
+                clearInterval(Game.timerId);
+                const content = document.getElementById('game-content');
+                if(failed) Game.score = 0; // Fail rule
+                
+                utils.playSfx(failed ? 'error' : 'fanfare');
+                if(!failed) utils.spawnParticles();
+
+                if(Game.stage >= 1 && Game.stage <= 4) {
+                    AppState.progress[`act${Game.stage}`] = Game.score;
+                    utils.saveState();
+                    UI.updateLayout(); // To update total score in header
+                }
+
+                content.innerHTML = `
+                    <div class="text-center p-8 bg-black bg-opacity-70 rounded-xl border-2 ${failed ? 'border-red-800' : 'border-[#d4af37]'} max-w-lg w-full">
+                        <h2 class="text-5xl font-bold mb-4 font-heading ${failed ? 'text-[#a82626]' : 'text-[#d4af37]'}">${failed ? 'Mission Failed' : 'Mission Complete!'}</h2>
+                        ${Game.stage >= 1 && Game.stage <= 4 ? `<div class="text-7xl font-bold my-8 font-heading title-shadow">${Game.score} <span class="text-3xl text-gray-400">pts</span></div>` : ''}
+                        <button id="btn-finish-game" class="ds-button mt-4 text-xl w-full">Continue</button>
+                    </div>
+                `;
+                document.getElementById('btn-finish-game').onclick = () => {
+                    utils.playSfx('click');
+                    UI.switchView('view-hub');
+                    UI.renderHubContent();
+                };
+            },
+
+            // --- PRACTICE MODES ---
+            startPractice: (type) => {
+                utils.playSfx('click');
+                if(type === 'say' && !AppState.micAllowed) {
+                    UI.showModal(`<h3 class="text-[#a82626] text-2xl font-bold font-heading">Microphone Required</h3><p class="mt-4">Please allow microphone access to use this feature.</p><button onclick="UI.hideModal()" class="ds-button mt-6 w-full">Close</button>`);
+                    return;
+                }
+                Game.stage = type === 'listen' ? 'p-listen' : 'p-say';
+                Game.initOverlay(type === 'listen' ? 'Read and Listen' : 'Read and Say');
+                Game.renderPracticeCard();
+            },
+            renderPracticeCard: () => {
+                if(Game.currentIndex >= Game.words.length) return Game.endGame();
+                const word = Game.words[Game.currentIndex];
+                const content = document.getElementById('game-content');
+                
+                let extraHtml = '';
+                if(Game.stage === 'p-listen') {
+                    extraHtml = `
+                        <div class="flex gap-4 mt-8 w-full">
+                            <button id="btn-audio-en" class="ds-button flex-1 bg-[#1a1a1a] border-gray-500"><i class="fa-solid fa-volume-high"></i> English</button>
+                            <button id="btn-audio-zh" class="ds-button flex-1 bg-[#1a1a1a] border-[#a82626]"><i class="fa-solid fa-volume-high"></i> 中文</button>
+                        </div>
+                    `;
+                } else {
+                    extraHtml = `
+                        <button id="btn-mic" class="mt-8 rounded-full w-24 h-24 bg-[#a82626] border-4 border-[#d4af37] flex items-center justify-center text-4xl hover:scale-105 transition shadow-[0_0_15px_#a82626]">
+                            <i class="fa-solid fa-microphone text-white"></i>
+                        </button>
+                        <div id="speech-feedback" class="mt-4 text-lg font-bold h-8 transition-colors duration-300"></div>
+                    `;
+                }
+
+                content.innerHTML = `
+                    <div class="text-gray-400 mb-2 font-heading tracking-widest uppercase">Word ${Game.currentIndex + 1} / 5</div>
+                    <div class="ds-card p-10 flex flex-col items-center max-w-md w-full text-center border-t-4 border-t-[#d4af37]">
+                        <div class="text-5xl font-bold text-[#f0f0f0] mb-6 capitalize tracking-wide">${word.en}</div>
+                        <div class="text-3xl text-[#d4af37] font-semibold">${word.zh}</div>
+                        ${extraHtml}
+                    </div>
+                    ${Game.stage === 'p-listen' ? `<button id="btn-next-prac" class="mt-10 ds-button bg-gray-800 text-xl px-12">Next <i class="fa-solid fa-arrow-right ml-2"></i></button>` : ''}
+                `;
+
+                if(Game.stage === 'p-listen') {
+                    document.getElementById('btn-audio-en').onclick = () => { utils.playSfx('click'); utils.speak(word.en, 'en-US'); };
+                    document.getElementById('btn-audio-zh').onclick = () => { utils.playSfx('click'); utils.speak(word.zh, 'zh-TW'); };
+                    document.getElementById('btn-next-prac').onclick = () => {
+                        utils.playSfx('click');
+                        Game.currentIndex++;
+                        Game.renderPracticeCard();
+                    };
+                } else {
+                    const micBtn = document.getElementById('btn-mic');
+                    const feedback = document.getElementById('speech-feedback');
+                    
+                    let recognition = null;
+                    let isRecognizing = false; 
+                    
+                    if ('webkitSpeechRecognition' in window) {
+                        recognition = new webkitSpeechRecognition();
+                        recognition.lang = 'en-US';
+                        recognition.interimResults = false;
+                        recognition.maxAlternatives = 1;
+                        
+                        recognition.onstart = () => {
+                            isRecognizing = true;
+                            micBtn.classList.add('animate-pulse', 'bg-red-500');
+                            feedback.innerText = "Listening... 聆聽中...";
+                            feedback.className = "mt-4 text-lg font-bold h-8 text-blue-400";
+                        };
+                        
+                        recognition.onresult = (event) => {
+                            const transcript = event.results[0][0].transcript.toUpperCase();
+                            const conf = event.results[0][0].confidence;
+                            
+                            let score = 0;
+                            if(transcript.includes(word.en.toUpperCase())) score = Math.round(conf * 100);
+                            else score = 50; 
+
+                            if(score > 60) {
+                                utils.playSfx('slash');
+                                feedback.innerText = `Good Job! (${score}/100)`;
+                                feedback.className = "mt-4 text-lg font-bold h-8 text-[#5cb85c]";
+                                setTimeout(() => {
+                                    Game.currentIndex++;
+                                    Game.renderPracticeCard();
+                                }, 1500);
+                            } else {
+                                utils.playSfx('error');
+                                feedback.innerText = `Try again! (Heard: ${transcript})`;
+                                feedback.className = "mt-4 text-lg font-bold h-8 text-[#a82626]";
+                            }
+                        };
+                        
+                        recognition.onerror = () => {
+                            isRecognizing = false;
+                            micBtn.classList.remove('animate-pulse', 'bg-red-500');
+                            feedback.innerText = "Could not hear you. Please try again.";
+                        };
+                        
+                        recognition.onend = () => {
+                            isRecognizing = false;
+                            micBtn.classList.remove('animate-pulse', 'bg-red-500');
+                        };
+                    } else {
+                        feedback.innerText = "Speech recognition not supported in this browser.";
+                    }
+
+                    micBtn.onclick = () => {
+                        utils.playSfx('click');
+                        if(recognition && !isRecognizing) {
+                            try { recognition.start(); } catch(e) { console.warn(e); }
+                        }
+                    };
+                }
+            },
+
+            // --- ACTIVITIES ---
+            startActivity: (stageNum) => {
+                utils.playSfx('click');
+                Game.stage = stageNum;
+                Game.initOverlay(`stage ${stageNum}`);
+                
+                const duration = stageNum === 4 ? 180 : 30;
+                
+                Game.startTimer(duration, 
+                    (timeLeft) => {
+                        // Math penalty happens in checkAnswer
+                    }, 
+                    () => {
+                        Game.endGame(true); 
+                    }
+                );
+
+                Game.renderStage();
+            },
+
+            renderStage: () => {
+                if(Game.currentIndex >= Game.words.length) return Game.endGame(false);
+                const word = Game.words[Game.currentIndex];
+                const content = document.getElementById('game-content');
+                
+                if(Game.stage === 1 || Game.stage === 2) {
+                    const topText = Game.stage === 1 ? word.en : word.zh;
+                    const options = utils.shuffle([word, ...utils.shuffle(MASTER_VOCAB.filter(v=>v.en!==word.en)).slice(0,3)]);
+                    
+                    content.innerHTML = `
+                        <div class="text-gray-400 mb-8 font-heading tracking-widest uppercase text-xl">Word ${Game.currentIndex + 1} of 5</div>
+                        <div class="text-5xl font-bold mb-12 title-shadow text-[#f0f0f0] capitalize">${topText}</div>
+                        <div class="grid grid-cols-2 gap-4 w-full max-w-lg">
+                            ${options.map((opt, i) => `
+                                <button class="ds-button py-8 text-2xl font-bold bg-[#1a1a1a] hover:bg-[#a82626] transition-colors" onclick="Game.checkAnswer('${opt.en}', '${word.en}')">
+                                    ${Game.stage === 1 ? opt.zh : opt.en}
+                                </button>
+                            `).join('')}
+                        </div>
+                    `;
+                } else if(Game.stage === 3) {
+                    const isEnglishAudio = Math.random() > 0.5;
+                    const audioText = isEnglishAudio ? word.en : word.zh;
+                    const options = utils.shuffle([word, ...utils.shuffle(MASTER_VOCAB.filter(v=>v.en!==word.en)).slice(0,3)]);
+                    
+                    content.innerHTML = `
+                        <button id="btn-replay-audio" class="w-32 h-32 rounded-full bg-[#1a1a1a] border-4 border-[#d4af37] flex items-center justify-center text-5xl mb-12 animate-breathe hover:scale-105 transition shadow-lg shadow-black">
+                            <i class="fa-solid fa-volume-high text-[#f0f0f0]"></i>
+                        </button>
+                        <div class="grid grid-cols-2 gap-4 w-full max-w-lg">
+                            ${options.map((opt, i) => `
+                                <button class="ds-button py-6 text-xl font-bold" onclick="Game.checkAnswer('${opt.en}', '${word.en}')">
+                                    ${isEnglishAudio ? opt.zh : opt.en}
+                                </button>
+                            `).join('')}
+                        </div>
+                        <button class="mt-10 text-gray-400 hover:text-white border border-gray-600 px-6 py-2 rounded transition" onclick="Game.skipWord()">Skip 略過</button>
+                    `;
+                    const playLogic = () => { utils.playSfx('click'); utils.speak(audioText, isEnglishAudio ? 'en-US' : 'zh-TW'); };
+                    document.getElementById('btn-replay-audio').onclick = playLogic;
+                    setTimeout(playLogic, 500); 
+                } else if(Game.stage === 4) {
+                    if(!Game.spellState) {
+                        Game.spellState = { 
+                            letters: word.en.split(''), 
+                            filled: new Array(word.en.length).fill(false),
+                            currentPos: 0, 
+                            disabled: [], 
+                            hintsUsed: 0 
+                        };
+                    }
+                    
+                    const keyboard = 'abcdefghijklmnopqrstuvwxyz'.split('');
+                    
+                    content.innerHTML = `
+                        <div class="text-gray-400 mb-6 font-heading tracking-widest uppercase text-lg">word ${Game.currentIndex + 1} of 5</div>
+                        <button id="btn-replay-audio-sp" class="text-5xl mb-10 text-[#d4af37] hover:text-white transition drop-shadow-md"><i class="fa-solid fa-volume-high"></i></button>
+                        
+                        <div class="flex gap-4 md:gap-6 justify-center mb-12 flex-wrap max-w-2xl font-vocab">
+                            ${Game.spellState.letters.map((char, i) => `
+                                <div class="w-8 h-10 md:w-10 md:h-12 border-b-4 ${i === Game.spellState.currentPos ? 'border-[#a82626] animate-pulse' : 'border-gray-500'} flex items-end justify-center text-4xl md:text-5xl font-bold pb-1 text-[#f0f0f0] transition-all">
+                                    ${Game.spellState.filled[i] ? char.toLowerCase() : '&nbsp;'}
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div class="w-full max-w-2xl flex flex-wrap justify-center gap-2 p-4 rounded-xl bg-black bg-opacity-40 border border-gray-800">
+                            ${keyboard.map(char => `
+                                <button class="key-btn w-10 h-12 md:w-12 md:h-14 ${Game.spellState.disabled.includes(char) ? 'key-disabled' : 'hover:bg-[#a82626] hover:border-[#a82626]'}" onclick="Game.handleKeypress('${char}')">${char}</button>
+                            `).join('')}
+                        </div>
+                        
+                        <button class="mt-8 text-[#d4af37] font-bold border-2 border-[#d4af37] px-6 py-3 rounded hover:bg-[#d4af37] hover:text-black transition" onclick="Game.useHint()">
+                            <i class="fa-solid fa-lightbulb"></i> reveal vowels (-3 pts)
+                        </button>
+                    `;
+                    document.getElementById('btn-replay-audio-sp').onclick = () => { utils.playSfx('click'); utils.speak(word.en, 'en-US'); };
+                }
+            },
+
+            checkAnswer: (selectedEn, correctEn) => {
+                if(selectedEn === correctEn) {
+                    utils.playSfx('slash');
+                    let pts = 20;
+                    if(Game.stage < 4 && Game.timeRemaining <= 15) {
+                        const secondsInPenalty = 15 - Game.timeRemaining;
+                        pts -= (secondsInPenalty * 2);
+                    }
+                    if(pts < 0) pts = 0;
+                    Game.score += pts;
+                    
+                    Game.currentIndex++;
+                    Game.renderStage();
+                } else {
+                    utils.playSfx('error');
+                    const content = document.getElementById('game-content');
+                    content.classList.add('bg-[#a82626]');
+                    setTimeout(() => content.classList.remove('bg-[#a82626]'), 200);
+                }
+            },
+
+            skipWord: () => {
+                utils.playSfx('click');
+                const word = Game.words.splice(Game.currentIndex, 1)[0];
+                Game.words.push(word);
+                Game.renderStage();
+            },
+
+            handleKeypress: (char) => {
+                const targetChar = Game.spellState.letters[Game.spellState.currentPos].toLowerCase();
+                
+                if(char === targetChar) {
+                    utils.playSfx('click');
+                    Game.spellState.filled[Game.spellState.currentPos] = true;
+                    
+                    // Advance to next unfilled position
+                    while(Game.spellState.currentPos < Game.spellState.letters.length && Game.spellState.filled[Game.spellState.currentPos]) {
+                        Game.spellState.currentPos++;
+                    }
+
+                    if(Game.spellState.currentPos >= Game.spellState.letters.length) {
+                        utils.playSfx('slash');
+                        let pts = 20 - (Game.spellState.hintsUsed * 3);
+                        if(pts < 0) pts = 0;
+                        Game.score += pts;
+                        
+                        Game.spellState = null;
+                        Game.currentIndex++;
+                        setTimeout(Game.renderStage, 600);
+                    } else {
+                        Game.renderStage();
+                    }
+                } else {
+                    utils.playSfx('error');
+                    // Disable 3 random incorrect letters
+                    const keyboard = 'abcdefghijklmnopqrstuvwxyz'.split('');
+                    const unpressedIncorrect = keyboard.filter(k => 
+                        !Game.spellState.disabled.includes(k) && 
+                        !Game.spellState.letters.includes(k) 
+                    );
+                    const toDisable = utils.shuffle(unpressedIncorrect).slice(0, 3);
+                    Game.spellState.disabled.push(...toDisable);
+                    Game.renderStage();
+                }
+            },
+
+            useHint: () => {
+                utils.playSfx('click');
+                const vowels = ['a','e','i','o','u'];
+                let hintApplied = false;
+
+                // Fill in all vowels
+                Game.spellState.letters.forEach((char, index) => {
+                    if (vowels.includes(char.toLowerCase()) && !Game.spellState.filled[index]) {
+                        Game.spellState.filled[index] = true;
+                        hintApplied = true;
+                    }
+                });
+                
+                if(hintApplied) {
+                    Game.spellState.hintsUsed++;
+                    
+                    // Adjust currentPos pointer
+                    while(Game.spellState.currentPos < Game.spellState.letters.length && Game.spellState.filled[Game.spellState.currentPos]) {
+                        Game.spellState.currentPos++;
+                    }
+                    
+                    if(Game.spellState.currentPos >= Game.spellState.letters.length) {
+                         let pts = 20 - (Game.spellState.hintsUsed * 3);
+                         if(pts < 0) pts = 0;
+                         Game.score += pts;
+                         Game.spellState = null;
+                         Game.currentIndex++;
+                         setTimeout(Game.renderStage, 600);
+                    } else {
+                        Game.renderStage();
+                    }
+                } else {
+                    // No vowels left to hint, optional: brief feedback
+                    Game.renderStage();
+                }
+            }
+        };
+
+        // --- INIT ROUTINE ---
+        window.onload = async () => {
+            await initFirebase();
+
+            // Hook UI elements (Nav Tabs)
+            document.querySelector('nav').addEventListener('click', (e) => {
+                if(e.target.classList.contains('nav-tab')) {
+                    utils.playSfx('click');
+                    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                    e.target.classList.add('active');
+                    AppState.currentTab = e.target.dataset.tab;
+                    utils.saveState();
+                    UI.renderHubContent();
+                }
+            });
+
+            document.getElementById('btn-exit-game').onclick = () => {
+                utils.playSfx('click');
+                clearInterval(Game.timerId);
+                UI.switchView('view-hub');
+                UI.renderHubContent();
+            };
+
+            document.getElementById('btn-toggle-vol').onclick = () => {
+                AppState.settings.volume = AppState.settings.volume === 1 ? 0 : 1;
+                utils.playSfx('click');
+                utils.saveState();
+                UI.updateFooter();
+            };
+
+            // Request Mic Modal
+            const requestMic = () => {
+                UI.showModal(`
+                    <div class="text-center">
+                        <i class="fa-solid fa-microphone-lines text-6xl text-[#d4af37] mb-6 animate-breathe"></i>
+                        <h2 class="text-2xl font-bold mb-4 font-heading text-[#f0f0f0]">Microphone Access</h2>
+                        <p class="text-gray-300 mb-8 font-primary">This app uses your microphone for pronunciation practice.<br>此程式需要使用麥克風進行朗讀練習。</p>
+                        <div class="flex gap-4 justify-center">
+                            <button id="btn-allow-mic" class="ds-button bg-[#2d5a27] border-[#2d5a27] flex-1">Allow 允許</button>
+                            <button id="btn-skip-mic" class="ds-button bg-gray-700 border-gray-500 flex-1">Skip 略過</button>
+                        </div>
+                    </div>
+                `);
+
+                document.getElementById('btn-allow-mic').onclick = async () => {
+                    utils.playSfx('click');
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        AppState.micAllowed = true;
+                        stream.getTracks().forEach(track => track.stop());
+                    } catch(err) {
+                        AppState.micAllowed = false;
+                        alert("Microphone denied. Read and Say will be disabled. (麥克風已拒絕，朗讀功能將停用)");
+                    }
+                    UI.updateFooter();
+                    UI.hideModal();
+                };
+
+                document.getElementById('btn-skip-mic').onclick = () => {
+                    utils.playSfx('click');
+                    AppState.micAllowed = false;
+                    UI.updateFooter();
+                    UI.hideModal();
+                };
+            };
+            
+            document.getElementById('btn-footer-mic').onclick = () => {
+                utils.playSfx('click');
+                requestMic();
+            };
+
+            // Session Logic
+            if(utils.loadState() && AppState.user.zhName && AppState.user.enName) {
+                // Resume
+                UI.showModal(`
+                    <h2 class="text-3xl font-bold mb-4 text-[#d4af37] font-heading">Welcome back, ${AppState.user.enName}!</h2>
+                    <p class="mb-8 text-gray-300">歡迎回來，${AppState.user.zhName}</p>
+                    <div class="flex flex-col gap-4">
+                        <button id="btn-resume" class="ds-button bg-[#2d5a27] border-[#2d5a27] py-3 text-lg">Continue Session 繼續</button>
+                        <button id="btn-new-session" class="text-[#a82626] font-bold underline py-2 mt-2 hover:text-white transition">Start New Session 重新開始</button>
+                    </div>
+                `);
+                document.getElementById('btn-resume').onclick = () => {
+                    utils.playSfx('click');
+                    UI.hideModal();
+                    if (!AppState.micAllowed) requestMic();
+                    UI.updateLayout();
+                    UI.switchView('view-hub');
+                    UI.renderHubContent();
+                };
+                document.getElementById('btn-new-session').onclick = () => {
+                    utils.playSfx('click');
+                    document.getElementById('modal-content').innerHTML = `
+                        <h3 class="text-2xl font-bold mb-4 text-[#a82626] font-heading">Delete previous session?</h3>
+                        <p class="mb-8 text-gray-300">All progress will be lost. (確定要刪除之前的進度嗎？)</p>
+                        <div class="flex gap-4">
+                            <button id="btn-confirm-del" class="ds-button bg-[#a82626] border-[#a82626] flex-1">Yes, Delete</button>
+                            <button onclick="window.location.reload()" class="ds-button bg-gray-600 border-gray-500 flex-1">Cancel</button>
+                        </div>
+                    `;
+                    document.getElementById('btn-confirm-del').onclick = () => {
+                        utils.clearState();
+                        UI.hideModal();
+                        UI.updateLayout();
+                        UI.switchView('view-welcome');
+                        setTimeout(requestMic, 1000);
+                    };
+                };
+            } else {
+                UI.updateLayout();
+                UI.switchView('view-welcome');
+                setTimeout(requestMic, 1000);
+            }
+
+            // Welcome form logic
+            document.getElementById('btn-start').onclick = () => {
+                utils.playSfx('click');
+                const zh = document.getElementById('input-zh-name').value.trim();
+                const en = document.getElementById('input-en-name').value.trim();
+                
+                const zhRegex = /^[\u4E00-\u9FFF]+$/;
+                const enRegex = /^[a-zA-Z]+$/;
+
+                let valid = true;
+                if(!zhRegex.test(zh)) {
+                    document.getElementById('err-zh-name').classList.remove('hidden');
+                    valid = false;
+                } else {
+                    document.getElementById('err-zh-name').classList.add('hidden');
+                }
+
+                if(!enRegex.test(en)) {
+                    document.getElementById('err-en-name').classList.remove('hidden');
+                    valid = false;
+                } else {
+                    document.getElementById('err-en-name').classList.add('hidden');
+                }
+
+                if(valid) {
+                    AppState.user.zhName = zh;
+                    AppState.user.enName = utils.capitalize(en);
+                    utils.saveState();
+                    UI.updateLayout();
+                    UI.switchView('view-hub');
+                    UI.renderHubContent();
+                }
+            };
+        };
+
+        // Attach global object for inline onclick handlers
+        window.Game = Game;
+        window.UI = UI;
+    </script>
+</body>
+</html>
